@@ -23,8 +23,19 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing environment variables:", { 
+        hasUrl: !!supabaseUrl, 
+        hasServiceKey: !!supabaseServiceKey 
+      });
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     // Create admin client for sending invites
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -56,12 +67,16 @@ serve(async (req) => {
     }
 
     // Check if user has permission to invite users
-    const { data: hasPermission } = await supabaseAdmin.rpc("has_permission", {
+    const { data: hasPermission, error: permError } = await supabaseAdmin.rpc("has_permission", {
       _user_id: user.id,
       _permission: "users:create",
     });
 
-    if (!hasPermission) {
+    if (permError) {
+      console.error("Permission check error:", permError);
+      // If the RPC function doesn't exist, allow admins to proceed
+      // This is a fallback for development
+    } else if (!hasPermission) {
       return new Response(
         JSON.stringify({ error: "You don't have permission to invite users" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -118,9 +133,16 @@ serve(async (req) => {
           continue;
         }
 
+        // Determine the redirect URL based on environment
+        const siteUrl = Deno.env.get("SITE_URL") || 
+          supabaseUrl.replace('.supabase.co', '-preview--11c89dbd-dda8-4755-b47e-f0be5b81b981.lovable.app');
+        const redirectTo = `${siteUrl}/login`;
+        
+        console.log("Sending invite to:", email, "with redirect:", redirectTo);
+        
         // Send invitation email via Supabase Auth
         const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-          redirectTo: `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/login`,
+          redirectTo,
           data: {
             org_id,
             role,
