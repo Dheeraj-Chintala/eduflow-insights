@@ -1,0 +1,10 @@
+project_id = "weuyqamrxelvlcyzubcn"
+
+[functions.seed-test-users]
+verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
+
+[functions.ai-chat-stream]
+verify_jwt = false
