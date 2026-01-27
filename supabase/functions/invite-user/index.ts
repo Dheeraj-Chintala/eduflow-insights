@@ -83,17 +83,25 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     console.log("Authenticated user:", userId);
 
-    // Check if user has permission to invite users
-    const { data: hasPermission, error: permError } = await supabaseAdmin.rpc("has_permission", {
-      _user_id: userId,
-      _permission: "users:create",
-    });
+    // Check if user has an admin role that allows inviting users
+    const adminRoles = ['super_admin', 'admin', 'sub_admin'];
+    const { data: userRoles, error: rolesError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
 
-    if (permError) {
-      console.error("Permission check error:", permError);
-      // If the RPC function doesn't exist, allow admins to proceed
-      // This is a fallback for development
-    } else if (!hasPermission) {
+    if (rolesError) {
+      console.error("Error fetching user roles:", rolesError);
+      return new Response(
+        JSON.stringify({ error: "Failed to verify permissions" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const hasAdminRole = userRoles?.some(r => adminRoles.includes(r.role));
+    console.log("User roles:", userRoles, "Has admin role:", hasAdminRole);
+
+    if (!hasAdminRole) {
       return new Response(
         JSON.stringify({ error: "You don't have permission to invite users" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
