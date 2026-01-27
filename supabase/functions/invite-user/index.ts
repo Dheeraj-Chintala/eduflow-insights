@@ -54,21 +54,38 @@ serve(async (req) => {
       );
     }
 
-    // Verify JWT and get user
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (authError || !user) {
-      console.error("Auth error:", authError);
+    // Create a client with the user's JWT for proper validation
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!anonKey) {
+      console.error("Missing SUPABASE_ANON_KEY");
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const supabaseWithAuth = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    // Verify JWT using getClaims
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseWithAuth.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("JWT validation error:", claimsError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", details: claimsError?.message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    const userId = claimsData.claims.sub as string;
+    console.log("Authenticated user:", userId);
 
     // Check if user has permission to invite users
     const { data: hasPermission, error: permError } = await supabaseAdmin.rpc("has_permission", {
-      _user_id: user.id,
+      _user_id: userId,
       _permission: "users:create",
     });
 
@@ -146,7 +163,7 @@ serve(async (req) => {
           data: {
             org_id,
             role,
-            invited_by: user.id,
+            invited_by: userId,
           },
         });
 
@@ -163,7 +180,7 @@ serve(async (req) => {
             email,
             role,
             org_id,
-            invited_by: user.id,
+            invited_by: userId,
             status: "pending",
           });
 
