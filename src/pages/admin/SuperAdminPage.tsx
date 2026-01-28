@@ -3,22 +3,13 @@ import AppLayout from '@/layouts/AppLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import MasterDashboard from '@/components/admin/MasterDashboard';
-import UserApprovals from '@/components/admin/UserApprovals';
-import ContentModeration from '@/components/admin/ContentModeration';
-import PricingControls from '@/components/admin/PricingControls';
-import AuditLogs from '@/components/admin/AuditLogs';
-import {
-  LayoutDashboard,
-  Users,
-  Shield,
-  DollarSign,
-  FileText,
-} from 'lucide-react';
+import OrganizationsDashboard from '@/components/superadmin/OrganizationsDashboard';
+import OrganizationAdmins from '@/components/superadmin/OrganizationAdmins';
+import { Building2, Shield } from 'lucide-react';
 
-export default function AdminControlsPage() {
+export default function SuperAdminPage() {
   const { isLoading, primaryRole } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('organizations');
 
   if (isLoading) {
     return (
@@ -30,30 +21,39 @@ export default function AdminControlsPage() {
     );
   }
 
-  // Super admins should use the dedicated SuperAdminPage
-  if (primaryRole === 'super_admin') {
-    return <Navigate to="/super-admin" replace />;
-  }
-
-  // Only admin and sub_admin can access this page
-  if (!primaryRole || !['admin', 'sub_admin'].includes(primaryRole)) {
+  // Only super_admin can access this page
+  if (primaryRole !== 'super_admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, component: MasterDashboard },
-    { id: 'approvals', label: 'User Approvals', icon: Users, component: UserApprovals },
-    { id: 'moderation', label: 'Content Moderation', icon: Shield, component: ContentModeration },
-    { id: 'pricing', label: 'Pricing & Commissions', icon: DollarSign, component: PricingControls },
-    { id: 'audit', label: 'Audit Logs', icon: FileText, component: AuditLogs },
+    {
+      id: 'organizations',
+      label: 'Organizations',
+      icon: Building2,
+      component: OrganizationsDashboard,
+    },
+    {
+      id: 'admins',
+      label: 'Organization Admins',
+      icon: Shield,
+      component: OrganizationAdmins,
+    },
   ];
 
   return (
     <AppLayout>
       <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Super Admin</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage organizations and their administrators
+          </p>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex flex-wrap gap-1 h-auto p-1">
-            {tabs.map(tab => (
+            {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
@@ -65,7 +65,7 @@ export default function AdminControlsPage() {
             ))}
           </TabsList>
 
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <TabsContent key={tab.id} value={tab.id} className="mt-6">
               <tab.component />
             </TabsContent>

@@ -461,6 +461,7 @@ import AdminSecurityPage from "./pages/admin/AdminSecurityPage";
 
 // Admin Controls Pages
 import AdminControlsPage from "./pages/admin/AdminControlsPage";
+import SuperAdminPage from "./pages/admin/SuperAdminPage";
 
 // Legal Pages
 import TermsPage from "./pages/legal/TermsPage";
@@ -698,6 +699,11 @@ const App = () => (
             <Route path="/admin/invite-users" element={
               <ProtectedRoute allowedRoles={['super_admin', 'admin', 'sub_admin']}>
                 <InviteUsersPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/super-admin" element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <SuperAdminPage />
               </ProtectedRoute>
             } />
             
