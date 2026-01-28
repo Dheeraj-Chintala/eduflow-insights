@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 
 // Role hierarchy for redirect priority
 const ROLE_PRIORITY: { role: AppRole; path: string }[] = [
-  { role: 'super_admin', path: '/admin/dashboard' },
+  { role: 'super_admin', path: '/super-admin' },
   { role: 'admin', path: '/admin/dashboard' },
   { role: 'sub_admin', path: '/admin/dashboard' },
   { role: 'trainer', path: '/instructor/dashboard' },
