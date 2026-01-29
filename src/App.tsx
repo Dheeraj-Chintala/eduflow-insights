@@ -395,6 +395,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import SetPassword from "./pages/SetPassword";
 import Dashboard from "./pages/Dashboard";
 import BrowseCourses from "./pages/BrowseCourses";
 import CourseDetails from "./pages/CourseDetails";
@@ -494,6 +495,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/set-password" element={<SetPassword />} />
             
             {/* Common Protected Routes */}
             <Route path="/dashboard" element={

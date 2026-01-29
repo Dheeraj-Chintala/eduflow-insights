@@ -161,7 +161,7 @@ serve(async (req) => {
         // Determine the redirect URL based on environment
         const siteUrl = Deno.env.get("SITE_URL") || 
           supabaseUrl.replace('.supabase.co', '-preview--11c89dbd-dda8-4755-b47e-f0be5b81b981.lovable.app');
-        const redirectTo = `${siteUrl}/login`;
+        const redirectTo = `${siteUrl}/set-password`;
         
         console.log("Sending invite to:", email, "with redirect:", redirectTo);
         

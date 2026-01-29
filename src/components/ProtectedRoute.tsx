@@ -2,6 +2,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import type { AppRole } from '@/types/database';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -36,8 +38,29 @@ function getDefaultPathForRoles(userRoles: AppRole[]): string {
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, isLoading, roles } = useAuth();
   const location = useLocation();
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState<boolean | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    const checkPasswordSetup = async () => {
+      if (!user) {
+        setNeedsPasswordSetup(false);
+        return;
+      }
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const isInvitedUser = session.user.user_metadata?.invited_by;
+        const hasSetPassword = session.user.user_metadata?.password_set;
+        setNeedsPasswordSetup(isInvitedUser && !hasSetPassword);
+      } else {
+        setNeedsPasswordSetup(false);
+      }
+    };
+    
+    checkPasswordSetup();
+  }, [user]);
+
+  if (isLoading || needsPasswordSetup === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -50,6 +73,11 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Redirect invited users to set password
+  if (needsPasswordSetup && location.pathname !== '/set-password') {
+    return <Navigate to="/set-password" replace />;
   }
 
   // Check role-based access if allowedRoles specified
