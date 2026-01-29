@@ -69,6 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user && !initialized.current) {
           initialized.current = true;
+          
+          // Check if invited user needs to set password
+          const isInvitedUser = session.user.user_metadata?.invited_by;
+          const hasSetPassword = session.user.user_metadata?.password_set;
+          
+          if (isInvitedUser && !hasSetPassword) {
+            // Will be handled by SetPassword page
+            setIsLoading(false);
+            return;
+          }
+          
           fetchUserData(session.user.id);
         }
 
